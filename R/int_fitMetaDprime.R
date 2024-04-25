@@ -1,14 +1,13 @@
 int_fitMetaDprime   <- function(ratings, stimulus, correct,
-                                ModelVersion = "ML",
-                                nInits = 5, nRestart = 3){
+                                ModelVersion, nInits,
+                                nRestart, nRatings, abj_f){
 
   # prepare data
 
-  nRatings <-  length(levels(ratings))
-  nCriteria <- nRatings * 2 - 1
-  abj_f <- 1 /(nRatings*2)
-  abs_corrects <-  table(ratings[correct == 1], stimulus[correct == 1]) + abj_f
-  abs_errors <- table(ratings[correct == 0], stimulus[correct == 0]) + abj_f
+  abs_corrects <-
+    table(ratings[correct == 1], stimulus[correct == 1]) + abj_f
+  abs_errors <-
+    table(ratings[correct == 0], stimulus[correct == 0]) + abj_f
 
   abs_S1 <- c(rev(abs_errors[,2]),abs_corrects[,2])
   ratingHrs <- qnorm(1 - cumsum(abs_S1)/sum(abs_S1))
@@ -26,23 +25,36 @@ int_fitMetaDprime   <- function(ratings, stimulus, correct,
   # compute type 1 parameters based on formulae
 
   dprime <- ratingHrs[nRatings] - ratingFrs[nRatings]
+  if (dprime < 0){
+    stop("Cannot reasonably estimate meta-d'/d'because type 1 performance is below chance.")
+    }
   cs <- (-.5 * ( ratingHrs  + ratingFrs))
   cprime <- cs[nRatings]/dprime
 
   # use a coarse grid search to identify the most promising starting parameters
-  temp <- expand.grid(d = seq(0, 5, length.out = 10),
+  temp <- expand.grid(d = seq(0.1, 5, length.out = 10),
                       tauMin =  seq(.1,2,length.out=10),  # position of the most conservative confidence criterion related to stimulus A
                       tauRange = seq(0.5,5,length.out=10))  # range of rating criteria stimulus B  #  position of the most liberal confidence criterion with respect to thet
 
   inits <- data.frame(matrix(data=NA, nrow= nrow(temp), ncol = 1 + (nRatings-1)*2))
-  inits[,1] <- temp$d #  qnorm((temp$d + 10)/ 20)
-  inits[,2:(nRatings-1)] <-
-    log(t(mapply(function(tauRange) rep(tauRange/(nRatings-1), nRatings-2),
-                 temp$tauRange)))
+  inits[,1] <- log(temp$d) #  qnorm((temp$d + 10)/ 20)
+  if (nRatings == 3){
+    inits[,2] <-
+      log(mapply(function(tauRange) rep(tauRange/(nRatings-1), nRatings-2),
+                 temp$tauRange))
+    inits[,(nRatings+2):(nRatings*2-1)] <-
+      log(mapply(function(tauRange) rep(tauRange/(nRatings-1), nRatings-2),
+                   temp$tauRange))
+  }
+  if (nRatings > 3){
+    inits[,2:(nRatings-1)] <-
+      log(t(mapply(function(tauRange) rep(tauRange/(nRatings-1), nRatings-2),
+                   temp$tauRange)))
+    inits[,(nRatings+2):(nRatings*2-1)] <-
+      log(t(mapply(function(tauRange) rep(tauRange/(nRatings-1), nRatings-2),
+                   temp$tauRange)))
+  }
   inits[,nRatings:(nRatings+1)] <- rep(log(temp$tauMin),2)
-  inits[,(nRatings+2):(nRatings*2-1)] <-
-    log(t(mapply(function(tauRange) rep(tauRange/(nRatings-1), nRatings-2),
-                 temp$tauRange)))
 
   if(ModelVersion == "ML"){
     logL <- apply(inits, MARGIN = 1,
@@ -62,7 +74,7 @@ int_fitMetaDprime   <- function(ratings, stimulus, correct,
       m <- try(optim(par = inits[j,], fn = negLoglMetaD, gr = NULL,
                      nC_rS1 = nC_rS1, nI_rS1 = nI_rS1, nC_rS2 = nC_rS2, nI_rS2 = nI_rS2,
                      nRatings = nRatings, cprime = cprime,
-                     control = list(maxit = 10^6, reltol = 10^-8)), silent=T)
+                     control = list(maxit = 10^4, reltol = 10^-4)), silent=T)
       for(i in 2:nRestart){
         try(m <- try(optim(par = m$par, fn = negLoglMetaD, gr = NULL,
                            nC_rS1 = nC_rS1, nI_rS1 = nI_rS1, nC_rS2 = nC_rS2, nI_rS2 = nI_rS2,
@@ -109,11 +121,12 @@ int_fitMetaDprime   <- function(ratings, stimulus, correct,
     dprime = dprime,
     cprime = cprime,
     c = dprime * cprime,
-    metaD = NA, Ratio = NA, ModelVersion = ModelVersion)
+    metaD = NA, Ratio = NA,
+    ModelVersion = ModelVersion)
 
   if(exists("fit")){
     if(is.list(fit)){
-      result$metaD = fit$par[1]
+      result$metaD = exp(fit$par[1])
       result$Ratio =  result$metaD / dprime
 
     }
@@ -123,7 +136,7 @@ int_fitMetaDprime   <- function(ratings, stimulus, correct,
 }
 
 negLoglMetaD <- function(parameters, nC_rS1,nI_rS1, nC_rS2,nI_rS2,nRatings, cprime){
-  metadprime <- parameters[1] # pnorm(parameters[1])*20 - 10
+  metadprime <- exp(parameters[1]) # pnorm(parameters[1])*20 - 10
   S1mu <- -metadprime/2
   S2mu <- metadprime/2
   meta_c <- metadprime*cprime
@@ -151,7 +164,7 @@ negLoglMetaD <- function(parameters, nC_rS1,nI_rS1, nC_rS2,nI_rS2,nRatings, cpri
 }
 
 negLoglFleming <- function(parameters, nC_rS1,nI_rS1, nC_rS2,nI_rS2,nRatings, type1_c){
-  metadprime <- parameters[1] # pnorm(parameters[1])*20 - 10
+  metadprime <- exp(parameters[1]) # pnorm(parameters[1])*20 - 10
   S1mu <- -metadprime/2
   S2mu <- metadprime/2
   t2_rS1 <- c(-Inf, type1_c - rev(cumsum(exp(parameters[2:nRatings]))), type1_c)

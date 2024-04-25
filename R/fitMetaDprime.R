@@ -1,6 +1,7 @@
 #' Fits meta-d' and meta-d'/d' ratios for data from one or several subjects
 #'
 #' This function computes meta-d' and meta-d'/d' for each  participant in the \code{data}, respectively.
+#'
 #' @param data  a `data.frame` where each row is one trial, containing following
 #' variables:
 #' * \code{rating} (discrete confidence judgments, should be given as factor;
@@ -24,7 +25,7 @@
 #' number of cores -1 will be used.
 #'
 #' @return Gives data frame with rows for each participant and columns dprime, c, metaD, and Ratio
-#' - dprime is the discrimination sensitivity index d', calculated using a standard SDT formula
+#' - dprime is the discrimination sensitivity index d, calculated using a standard SDT formula
 #' - c is the discrimination bias c, calculated using a standard SDT formula
 #' - metaD is meta-d', discrimination sensitivity estimated from confidence judgments conditioned on the response
 #' - Ratio is meta-d'/d', a quantity usually referred to as metacognitive efficiency.
@@ -36,7 +37,7 @@
 #' starting values for the maximum likelihood optimization procedure. Then the best \code{nInits}
 #' parameter sets found by the grid search are used as the initial values for separate
 #' runs of the Nelder-Mead algorithm implemented in \code{\link[stats]{optim}}.
-#' Each run is restarted \code{nRestart} times. Warning: Meta-d'/d'
+#' Each run is restarted \code{nRestart} times. Warning: meta-d'/d'
 #' is only guaranteed to be unbiased from discrimination sensitivity, discrimination
 #' bias, and confidence criteria if the data is generated according to the
 #' independent truncated Gaussian model (see Rausch et al., 2023).
@@ -53,14 +54,14 @@
 #' @references Fleming, S. M. (2017). HMeta-d: Hierarchical Bayesian estimation of metacognitive efficiency from confidence ratings. Neuroscience of Consciousness, 1, 1–14. doi: 10.1093/nc/nix007
 #' @references Maniscalco, B., & Lau, H. (2012). A signal detection theoretic method for estimating metacognitive sensitivity from confidence ratings. Consciousness and Cognition, 21(1), 422–430.
 #' @references Maniscalco, B., & Lau, H. C. (2014). Signal Detection Theory Analysis of Type 1 and Type 2 Data: Meta-d’, Response- Specific Meta-d’, and the Unequal Variance SDT Model. In S. M. Fleming & C. D. Frith (Eds.), The Cognitive Neuroscience of Metacognition (pp. 25–66). Springer. doi: 10.1007/978-3-642-45190-4_3
-#' @references Rausch, M., Hellmann, S., & Zehetleitner, M. (2023). Measures of metacognitive efficiency across cognitive models of decision confidence (Preprint). PsyArXiv. doi: 10.31234/osf.io/kdz34
+#' @references Rausch, M., Hellmann, S., & Zehetleitner, M. (2023). Measures of metacognitive efficiency across cognitive models of decision confidence. Psychological Methods. doi: 10.31234/osf.io/kdz34
 #'
 #' @examples
 #' # 1. Select two subject from the masked orientation discrimination experiment
 #' data <- subset(MaskOri, participant %in% c(1:2))
 #' head(data)
 #'
-#' # 2. Fit meta-d'/d' for each subject in data
+#' # 2. Fit meta-d/d for each subject in data
 #' MetaDs <- fitMetaDprime(data, model="F", .parallel = FALSE)
 #'
 
@@ -87,8 +88,11 @@ fitMetaDprime <- function(data, model="ML",  nInits = 5, nRestart = 3,
   if(!all(data$correct %in% c(0,1))) stop("correct should be 1 or 0")
   if(!any(data$correct == 0)) stop("There should be at least one erroneous response")
   if(!any(data$correct == 1)) stop("There should be at least one correct response")
+  if(nrow(data) < 400) warning("Warning! At least 400 trials per subject are recommended for measuring metacognitive performance")
 
-  nRatings <- length(unique(data$rating))
+  nRatings <-  length(levels(data$rating))
+  abj_f <- 1 /(nRatings*2) # adjustment for low frequencies used by Maniscalco and Lau (2012)
+
   ## Define common names for the output to rbind all parameter fits together
   ## ToDo: Namen anpassen
   outnames <- c("model", "participant", "dprime", "c", "metaD", "Ratio")
@@ -100,7 +104,9 @@ fitMetaDprime <- function(data, model="ML",  nInits = 5, nRestart = 3,
     data_part <- subset(data, participant==cur_sbj)
     res <- int_fitMetaDprime(ratings=data_part$rating,
                              stimulus=data_part$stimulus, correct = data_part$correct,
-                             ModelVersion = cur_model,  nInits = nInits, nRestart = nRestart)
+                             ModelVersion = cur_model,
+                             nInits = nInits, nRestart = nRestart,
+                             nRatings = nRatings, abj_f = abj_f)
     res$model <- cur_model
     res$participant <- cur_sbj
     res[outnames[!(outnames %in% names(res))]] <- NA
@@ -117,7 +123,7 @@ fitMetaDprime <- function(data, model="ML",  nInits = 5, nRestart = 3,
     for (i in 1:nrow(jobs)) {
       listjobs[[i]] <- c(model = jobs[["model"]][i], sbj = jobs[["sbj"]][i])
     }
-    if (is.null(n.cores)) n.cores <- detectCores() - 1
+    if (is.null(n.cores)) n.cores <- min(nJobs, detectCores() - 1)
 
     cl <- makeCluster(type="SOCK", n.cores)
     clusterExport(cl, c("data",  "model","outnames", "call_fitfct", "nInits", "nRestart"),

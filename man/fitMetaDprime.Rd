@@ -40,7 +40,7 @@ number of cores -1 will be used.}
 \value{
 Gives data frame with rows for each participant and columns dprime, c, metaD, and Ratio
 \itemize{
-\item dprime is the discrimination sensitivity index d', calculated using a standard SDT formula
+\item dprime is the discrimination sensitivity index d, calculated using a standard SDT formula
 \item c is the discrimination bias c, calculated using a standard SDT formula
 \item metaD is meta-d', discrimination sensitivity estimated from confidence judgments conditioned on the response
 \item Ratio is meta-d'/d', a quantity usually referred to as metacognitive efficiency.
@@ -56,7 +56,7 @@ or the one assumed by Fleming (2014). The fitting routine first performs a coars
 starting values for the maximum likelihood optimization procedure. Then the best \code{nInits}
 parameter sets found by the grid search are used as the initial values for separate
 runs of the Nelder-Mead algorithm implemented in \code{\link[stats]{optim}}.
-Each run is restarted \code{nRestart} times. Warning: Meta-d'/d'
+Each run is restarted \code{nRestart} times. Warning: meta-d'/d'
 is only guaranteed to be unbiased from discrimination sensitivity, discrimination
 bias, and confidence criteria if the data is generated according to the
 independent truncated Gaussian model (see Rausch et al., 2023).
@@ -66,7 +66,7 @@ independent truncated Gaussian model (see Rausch et al., 2023).
 data <- subset(MaskOri, participant \%in\% c(1:2))
 head(data)
 
-# 2. Fit meta-d'/d' for each subject in data
+# 2. Fit meta-d/d for each subject in data
 MetaDs <- fitMetaDprime(data, model="F", .parallel = FALSE)
 
 }
@@ -77,7 +77,7 @@ Maniscalco, B., & Lau, H. (2012). A signal detection theoretic method for estima
 
 Maniscalco, B., & Lau, H. C. (2014). Signal Detection Theory Analysis of Type 1 and Type 2 Data: Meta-d’, Response- Specific Meta-d’, and the Unequal Variance SDT Model. In S. M. Fleming & C. D. Frith (Eds.), The Cognitive Neuroscience of Metacognition (pp. 25–66). Springer. doi: 10.1007/978-3-642-45190-4_3
 
-Rausch, M., Hellmann, S., & Zehetleitner, M. (2023). Measures of metacognitive efficiency across cognitive models of decision confidence (Preprint). PsyArXiv. doi: 10.31234/osf.io/kdz34
+Rausch, M., Hellmann, S., & Zehetleitner, M. (2023). Measures of metacognitive efficiency across cognitive models of decision confidence. Psychological Methods. doi: 10.31234/osf.io/kdz34
 }
 \author{
 Manuel Rausch, \email{manuel.rausch@hochschule-rhein-waal.de}
