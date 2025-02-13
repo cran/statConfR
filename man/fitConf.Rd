@@ -20,17 +20,18 @@ a factor with a warning),
 \item \code{correct} (encoding whether the response was correct; should  be 0 for incorrect responses and 1 for correct responses)
 }}
 
-\item{model}{\code{character} of length 1.
-Models implemented so far: 'WEV', 'SDT', 'GN', 'PDA', 'IG', 'ITGc', 'ITGcm', 'logN', and 'logWEV'.}
+\item{model}{\code{character} of length 1. The generative model that should be
+fitted. Models implemented so far: 'WEV', 'SDT', 'GN', 'PDA', 'IG',
+'ITGc', 'ITGcm', 'logN', and 'logWEV'.}
 
-\item{nInits}{\code{integer}. Number of initial values used for maximum likelihood optimization.
+\item{nInits}{\code{integer}. Number of starting values used for maximum likelihood optimization.
 Defaults to 5.}
 
 \item{nRestart}{\code{integer}. Number of times the optimization algorithm is restarted.
 Defaults to 4.}
 }
 \value{
-Gives data frame with one row and columns for the fitted parameters of the
+Gives data frame with one row and one column for each of the fitted parameters of the
 selected model as well as additional information about the fit
 (\code{negLogLik} (negative log-likelihood of the final set of parameters),
 \code{k} (number of parameters), \code{N} (number of data rows),
@@ -39,8 +40,14 @@ selected model as well as additional information about the fit
 \code{AICc} (AIC corrected for small samples; Burnham & Anderson, 2002))
 }
 \description{
-This function fits one static model of decision confidence to binary choices and confidence judgments.
-It calls a corresponding fitting function for the selected model.
+The \code{fitConf} function fits the parameters of one static model of decision confidence,
+provided by the \code{model} argument, to binary choices and confidence judgments.
+See Details for the mathematical specification of the implemented models and
+their parameters.
+Parameters are fitted using a maximum likelihood estimation method with a
+initial grid search to find promising starting values for the optimization.
+In addition, several measures of model fit (negative log-likelihood, BIC, AIC, and AICc)
+are computed, which can be used for a quantitative model evaluation.
 }
 \details{
 The fitting routine first performs a coarse grid search to find promising
@@ -78,7 +85,7 @@ The number of thresholds will be inferred from the number of steps in the
 
 How the confidence variable \eqn{y} is computed varies across the different models.
 The following models have been implemented so far:
-\subsection{\strong{Signal Detection Rating Model (SDT)}}{
+\subsection{\strong{Signal detection rating model (SDT)}}{
 
 According to SDT, the same sample of sensory
 evidence is used to generate response and confidence, i.e.,
@@ -86,7 +93,7 @@ evidence is used to generate response and confidence, i.e.,
 right side of the decision criterion \eqn{c} (Green & Swets, 1966).
 }
 
-\subsection{\strong{Gaussian Noise Model (GN)}}{
+\subsection{\strong{Gaussian noise model (GN)}}{
 
 According to the model, \eqn{y} is subject to
 additive noise and assumed to be normally distributed around the decision
@@ -94,7 +101,7 @@ evidence value \eqn{x} with a standard deviation \eqn{\sigma} (Maniscalco & Lau,
 The parameter  \eqn{\sigma} is a free parameter.
 }
 
-\subsection{\strong{Weighted Evidence and Visibility model (WEV)}}{
+\subsection{\strong{Weighted evidence and visibility model (WEV)}}{
 
 WEV assumes that the observer combines evidence about decision-relevant features
 of the stimulus with the strength of evidence about choice-irrelevant features
@@ -118,7 +125,7 @@ For this model the parameter \eqn{b} is fitted in
 addition to the set of shared parameters.
 }
 
-\subsection{\strong{Independent Gaussian Model (IG)}}{
+\subsection{\strong{Independent Gaussian model (IG)}}{
 
 According to IG, \eqn{y} is sampled independently
 from \eqn{x} (Rausch & Zehetleitner, 2017). \eqn{y} is normally distributed with a mean of \eqn{a\times d_k} and variance
@@ -128,7 +135,7 @@ relative to amount of evidence available for the discrimination decision and can
 be smaller as well as greater than 1.
 }
 
-\subsection{\strong{Independent Truncated Gaussian Model: HMetad-Version (ITGc)}}{
+\subsection{\strong{Independent truncated Gaussian model: HMetad-Version (ITGc)}}{
 
 According to the version of ITG consistent
 with the HMetad-method (Fleming, 2017; see Rausch et al., 2023), \eqn{y} is sampled independently
@@ -143,7 +150,7 @@ amount of evidence available for discrimination decisions and  can be smaller
 as well as greater than 1.
 }
 
-\subsection{\strong{Independent Truncated Gaussian Model: Meta-d'-Version (ITGcm)}}{
+\subsection{\strong{Independent truncated Gaussian model: Meta-d'-Version (ITGcm)}}{
 
 According to the version of the ITG consistent
 with the original meta-d' method (Maniscalco & Lau, 2012, 2014; see Rausch et al., 2023),
@@ -157,7 +164,7 @@ amount of evidence available for the discrimination decision and  can be smaller
 as well as greater than 1.
 }
 
-\subsection{\strong{Logistic Noise Model (logN)}}{
+\subsection{\strong{Logistic noise model (logN)}}{
 
 According to logN, the same sample
 of sensory evidence is used to generate response and confidence, i.e.,
@@ -178,7 +185,7 @@ as free parameters. Instead, we estimate the means of the confidence criteria, i
 as free parameters.
 }
 
-\subsection{\strong{Logistic Weighted Evidence and Visibility model (logWEV)}}{
+\subsection{\strong{Logistic weighted evidence and visibility model (logWEV)}}{
 
 logWEV is a combination of logN and WEV proposed by Shekhar and Rahnev (2023).
 Conceptually, logWEV assumes that the observer combines evidence about decision-relevant features
@@ -204,41 +211,38 @@ head(data)
 
 # 2. Use fitting function
 \donttest{
-  # Fitting takes some time to run:
+  # Fitting takes some time (about 10 minutes on an 2.8GHz processor) to run:
   FitFirstSbjWEV <- fitConf(data, model="WEV")
 }
-
-
 }
 \references{
-Akaike, H. (1974). A New Look at the Statistical Model Identification. IEEE Transactions on Automatic Control, AC-19(6), 716–723.doi: 10.1007/978-1-4612-1694-0_16
+Akaike, H. (1974). A New Look at the Statistical Model Identification. IEEE Transactions on Automatic Control, AC-19(6), 716–723.doi: 10.1007/978-1-4612-1694-0_16\cr
 
-Burnham, K. P., & Anderson, D. R. (2002). Model selection and multimodel inference: A practical information-theoretic approach. Springer.
+Burnham, K. P., & Anderson, D. R. (2002). Model selection and multimodel inference: A practical information-theoretic approach. Springer.\cr
 
-Fleming, S. M. (2017). HMeta-d: Hierarchical Bayesian estimation of metacognitive efficiency from confidence ratings. Neuroscience of Consciousness, 1, 1–14. doi: 10.1093/nc/nix007
+Fleming, S. M. (2017). HMeta-d: Hierarchical Bayesian estimation of metacognitive efficiency from confidence ratings. Neuroscience of Consciousness, 1, 1–14. doi: 10.1093/nc/nix007\cr
 
-Green, D. M., & Swets, J. A. (1966). Signal detection theory and psychophysics. Wiley.
+Green, D. M., & Swets, J. A. (1966). Signal detection theory and psychophysics. Wiley.\cr
 
-Maniscalco, B., & Lau, H. (2012). A signal detection theoretic method for estimating metacognitive sensitivity from confidence ratings. Consciousness and Cognition, 21(1), 422–430.
+Maniscalco, B., & Lau, H. (2012). A signal detection theoretic method for estimating metacognitive sensitivity from confidence ratings. Consciousness and Cognition, 21(1), 422–430.\cr
 
-Maniscalco, B., & Lau, H. C. (2014). Signal Detection Theory Analysis of Type 1 and Type 2 Data: Meta-d’, Response- Specific Meta-d’, and the Unequal Variance SDT Model. In S. M. Fleming & C. D. Frith (Eds.), The Cognitive Neuroscience of Metacognition (pp. 25–66). Springer. doi: 10.1007/978-3-642-45190-4_3
+Maniscalco, B., & Lau, H. C. (2014). Signal Detection Theory Analysis of Type 1 and Type 2 Data: Meta-d’, Response- Specific Meta-d’, and the Unequal Variance SDT Model. In S. M. Fleming & C. D. Frith (Eds.), The Cognitive Neuroscience of Metacognition (pp. 25–66). Springer. doi: 10.1007/978-3-642-45190-4_3\cr
 
-Maniscalco, B., & Lau, H. (2016). The signal processing architecture underlying subjective reports of sensory awareness. Neuroscience of Consciousness, 1, 1–17. doi: 10.1093/nc/niw002
+Maniscalco, B., & Lau, H. (2016). The signal processing architecture underlying subjective reports of sensory awareness. Neuroscience of Consciousness, 1, 1–17. doi: 10.1093/nc/niw002\cr
 
-Rausch, M., Hellmann, S., & Zehetleitner, M. (2018). Confidence in masked orientation judgments is informed by both evidence and visibility. Attention, Perception, and Psychophysics, 80(1), 134–154. doi: 10.3758/s13414-017-1431-5
+Rausch, M., Hellmann, S., & Zehetleitner, M. (2018). Confidence in masked orientation judgments is informed by both evidence and visibility. Attention, Perception, and Psychophysics, 80(1), 134–154. doi: 10.3758/s13414-017-1431-5\cr
 
-Rausch, M., Hellmann, S., & Zehetleitner, M. (2023). Measures of metacognitive efficiency across cognitive models of decision confidence. Psychological Methods. doi: 10.31234/osf.io/kdz34
+Rausch, M., Hellmann, S., & Zehetleitner, M. (2023). Measures of metacognitive efficiency across cognitive models of decision confidence. Psychological Methods. doi: 10.31234/osf.io/kdz34\cr
 
-Rausch, M., & Zehetleitner, M. (2017). Should metacognition be measured by logistic regression? Consciousness and Cognition, 49, 291–312. doi: 10.1016/j.concog.2017.02.007
+Rausch, M., & Zehetleitner, M. (2017). Should metacognition be measured by logistic regression? Consciousness and Cognition, 49, 291–312. doi: 10.1016/j.concog.2017.02.007\cr
 
-Schwarz, G. (1978). Estimating the dimension of a model. The Annals of Statistics, 6(2), 461–464. doi: 10.1214/aos/1176344136
+Schwarz, G. (1978). Estimating the dimension of a model. The Annals of Statistics, 6(2), 461–464. doi: 10.1214/aos/1176344136\cr
 
-Shekhar, M., & Rahnev, D. (2021). The Nature of Metacognitive Inefficiency in Perceptual Decision Making. Psychological Review, 128(1), 45–70. doi: 10.1037/rev0000249
+Shekhar, M., & Rahnev, D. (2021). The Nature of Metacognitive Inefficiency in Perceptual Decision Making. Psychological Review, 128(1), 45–70. doi: 10.1037/rev0000249\cr
 
-Shekhar, M., & Rahnev, D. (2023). How Do Humans Give Confidence? A Comprehensive Comparison of Process Models of Perceptual Metacognition. Journal of Experimental Psychology: General. doi:10.1037/xge0001524
+Shekhar, M., & Rahnev, D. (2023). How Do Humans Give Confidence? A Comprehensive Comparison of Process Models of Perceptual Metacognition. Journal of Experimental Psychology: General. doi:10.1037/xge0001524\cr
 }
 \author{
-Sebastian Hellmann, \email{sebastian.hellmann@ku.de}
-
+Sebastian Hellmann, \email{sebastian.hellmann@tum.de}\cr
 Manuel Rausch, \email{manuel.rausch@hochschule-rhein-waal.de}
 }

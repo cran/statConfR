@@ -1,6 +1,232 @@
-# (i) SDT
+#' @title Plot the prediction of fitted parameters of one model of confidence over the corresponding  data
+#'
+#' @description The `plotConfModelFit` function plots the predicted distribution of discrimination responses
+#' and confidence ratings created from a `data.frame` of parameters obtaind from \code{\link{fitConfModels}}
+#' and overlays the predicted distribution over the data to which the model parameters were fitted.
+#'
+#' @param data  a `data.frame` where each row is one trial, containing following
+#' variables:
+#' * \code{diffCond} (optional; different levels of discriminability,
+#'    should be a factor with levels ordered from hardest to easiest),
+#' * \code{rating} (discrete confidence judgments, should be a factor with levels
+#'    ordered from lowest confidence to highest confidence;
+#'    otherwise will be transformed to factor with a warning),
+#' * \code{stimulus} (stimulus category in a binary choice task,
+#'    should be a factor with two levels, otherwise it will be transformed to
+#'    a factor with a warning),
+#' * \code{correct} (encoding whether the response was correct; should  be 0 for
+#'    incorrect responses and 1 for correct responses)
+#' * \code{participant} (some group ID, most often a participant identifier;
+#'    the models given in the second argument are fitted to each subset of `data`
+#'    determined by the different values of this column)
+#'
+#' @param fitted_pars a `data.frame` with one row for each participant and model parameters in different columns.
+#' fitted_pars also may contain a column called `model` specifying the model to be visualized.
+#' If there is no model column in data or if there are multiple models in fitted_pars,
+#' it is necessary to specify the model argument.
+#'
+#' @param model `character`. See \code{\link{fitConfModels}} for all available models
+#'
+#' @return a `ggplot` object with empirically observed distribution of responses and confidence ratings
+#'  as bars on the x-axis as a function of discriminability (in the rows) and stimulus
+#'  (in the columns). Superimposed on the empirical data,
+#'  the plot also shows the prediction of one selected model as dots.
+#'
+#' @examples
+#' # 1. Fit some models to each subject of the masked orientation discrimination experiment
+#'   # Normally, the fits should be created using the function fitConfModels
+#'   # Fits <- fitConfModels(data, models = "WEV", .parallel = TRUE)
+#'   # Here, we create the dataframe manually because fitting models takes about
+#'   # 10 minutes per model fit per participant on a 2.8GHz processor.
+#'   pars <- data.frame(participant = 1:16,
+#'   d_1 = c(0.20, 0.05, 0.41, 0.03, 0.00, 0.01, 0.11, 0.03, 0.19, 0.08, 0.00,
+#'   0.24, 0.00, 0.00, 0.25, 0.01),
+#'   d_2 = c(0.61, 0.19, 0.86, 0.18, 0.17, 0.39, 0.69, 0.14, 0.45, 0.30, 0.00,
+#'   0.27, 0.00, 0.05, 0.57, 0.23),
+#'   d_3 = c(1.08, 1.04, 2.71, 2.27, 1.50, 1.21, 1.83, 0.80, 1.06, 0.68, 0.29,
+#'   0.83, 0.77, 2.19, 1.93, 0.54),
+#'   d_4 = c(3.47, 4.14, 6.92, 4.79, 3.72, 3.24, 4.55, 2.51, 3.78, 2.40, 1.95,
+#'   2.55, 4.59, 4.27, 4.08, 1.80),
+#'   d_5 = c(4.08, 5.29, 7.99, 5.31, 4.53, 4.66, 6.21, 4.67, 5.85, 3.39, 3.39,
+#'   4.42, 6.48, 5.35, 5.28, 2.87),
+#'   c = c(-0.30, -0.15, -1.37, 0.17, -0.12, -0.19, -0.12, 0.41, -0.27, 0.00,
+#'   -0.19, -0.21, -0.91, -0.26, -0.20, 0.10),
+#'   theta_minus.4 = c(-2.07, -2.04, -2.76, -2.32, -2.21, -2.33, -2.27, -2.29,
+#'   -2.69, -3.80, -2.83, -1.74, -2.58, -3.09, -2.20, -1.57),
+#'   theta_minus.3 = c(-1.25, -1.95, -1.92, -2.07, -1.62, -1.68, -2.04, -2.02,
+#'   -1.84, -3.37, -1.89, -1.44, -2.31, -2.08, -1.53, -1.46),
+#'   theta_minus.2 = c(-0.42, -1.40, -0.37, -1.96, -1.45, -1.27, -1.98, -1.66,
+#'   -1.11, -2.69, -1.60, -1.25, -2.21, -1.68, -1.08, -1.17),
+#'   theta_minus.1 = c(0.13, -0.90,  0.93, -1.71, -1.25, -0.59, -1.40, -1.00,
+#'   -0.34, -1.65, -1.21, -0.76, -1.99, -0.92, -0.28, -0.99),
+#'   theta_plus.1 = c(-0.62, 0.82, -2.77, 2.01, 1.39, 0.60, 1.51, 0.90, 0.18,
+#'   1.62, 0.99,0.88, 1.67, 0.92, 0.18,  0.88),
+#'   theta_plus.2 = c(0.15, 1.45, -1.13,2.17, 1.61, 1.24, 1.99, 1.55, 0.96, 2.44,
+#'   1.53, 1.66, 2.00, 1.51, 1.08, 1.05),
+#'   theta_plus.3 = c(1.40, 2.24, 0.77, 2.32, 1.80, 1.58, 2.19, 2.19, 1.54, 3.17,
+#'   1.86, 1.85, 2.16, 2.09, 1.47, 1.70),
+#'   theta_plus.4 = c(2.19, 2.40, 1.75, 2.58, 2.53, 2.24, 2.59, 2.55, 2.58, 3.85,
+#'   2.87, 2.15, 2.51, 3.31, 2.27, 1.79),
+#'   sigma = c(1.01, 0.64, 1.33, 0.39, 0.30, 0.75, 0.75, 1.07, 0.65, 0.29, 0.31,
+#'   0.78, 0.39, 0.42, 0.69, 0.52),
+#'   w = c(0.54, 0.50, 0.38, 0.38, 0.36, 0.44, 0.48, 0.48, 0.52, 0.46, 0.53, 0.48,
+#'    0.29, 0.45, 0.51, 0.63))
+#'
+#' # 2. Plot the predicted probabilities based on model and fitted parameters
+#'   # against the observed relative frequencies.
+#'
+#'   PlotFitWEV <- plotConfModelFit(MaskOri, pars, model="WEV")
+#'   PlotFitWEV
+#'
+#' @import ggplot2
+#' @importFrom plyr ddply summarise
+#' @importFrom Rmisc summarySEwithin
+#' @importFrom stats aggregate
 
-generateDataSDT <- function(paramDf){
+#' @author Manuel Rausch, \email{manuel.rausch@hochschule-rhein-waal.de}
+
+#' @export
+plotConfModelFit <- function(data, fitted_pars, model = NULL){
+  if(is.null(model)){
+    if("model" %in% colnames(fitted_pars)){
+      if(length(unique(fitted_pars$model))==1){
+        model <- unique(fitted_pars$model)
+      } else {
+        stop("Please use the model argument to specify which model should be used")
+      }
+    }else {
+      stop("Please specify which model should be used")
+    }
+  }
+  if (is.null(data$diffCond)) data$diffCond <- factor(1)
+  if (!is.factor(data$diffCond)) {
+    data$diffCond <- factor(data$diffCond)
+  }
+  if(length(unique(data$stimulus)) != 2) {
+    stop("There must be exacltly two different possible values of stimulus")
+  }
+
+  if (!is.factor(data$stimulus)) {
+    data$stimulus <- factor(data$stimulus)
+  }
+  if (!is.factor(data$rating)) {
+    data$rating <- factor(data$rating)
+  }
+  if(!all(data$correct %in% c(0,1))) stop("correct should be 1 or 0")
+
+  PlotName <-
+    switch(model,
+           'GN' = "Gaussian noise model",
+           'IG' = "Independent Gaussian model",
+           'ITGc'  = "Independent truncated Gaussian model: HMetad-Version",
+           'ITGcm' = "Independent truncated Gaussian model: Meta-d'-Version",
+           'logN' = "Logistic noise model",
+           'logWEV' = "Logistic weighted evidence and visibility model",
+           'PDA' = "Post-decisional accumulation model",
+           'WEV' = "Weighted evidence and visibility model",
+           'SDT' = "Signal detection rating model") # models are color coded
+
+  # 1. First aggregate on the level of subjects
+
+  # AggDist <-
+  #   plyr::ddply(data,
+  #               ~  diffCond * rating *
+  #                 stimulus * correct * participant, #,
+  #               plyr::summarise,
+  #               p = length(rating),  .drop=FALSE)
+
+  AggDist <- plyr::ddply(data,
+                         ~  diffCond * rating * stimulus * correct * participant,
+                         function(df) {
+                           data.frame(p = length(df$rating))
+                         },
+                         .drop = FALSE)
+
+  # AggDist <- plyr::ddply(AggDist, ~
+  #                          diffCond * stimulus * participant,
+  #                        transform, N = sum(.data$p))
+  #
+  AggDist <- plyr::ddply(AggDist,
+                         ~ diffCond * stimulus * participant,
+                         function(df) {
+                           df$N <- sum(df$p)    # equivalent to transform without needingto scop
+                           df
+                         })
+  AggDist$p <- AggDist$p / AggDist$N
+
+
+  AggDist$rating <- as.numeric(AggDist$rating)
+  AggDist$correct <-
+    factor(AggDist$correct)
+  levels(AggDist$correct)  <-
+    c("incorrect", "correct")
+
+  # 2. aggregate across subjects
+  AggDist <-
+    Rmisc::summarySEwithin(AggDist , measurevar = "p",
+                           withinvars = c("diffCond", "correct", "rating", "stimulus"),
+                           idvar = "participant",
+                           na.rm = TRUE, .drop = TRUE)
+  AggDist$rating <- as.numeric(AggDist$rating)
+  levels(AggDist$stimulus) <- c("S = -1", "S = 1")
+  AggDist$diffCond <-
+    factor(as.numeric(AggDist$diffCond)) # diffCond should code the order of difficulty levels
+  levels(AggDist$diffCond) <-
+    paste("K =", as.numeric(levels(AggDist$diffCond)))
+
+  # 4) create the prediction from model fit
+
+  predictDataFun <- switch(model,
+                           'WEV' = predictDataWEV,
+                           'logWEV' = predictDataLogWEV,
+                           'SDT' = predictDataSDT,
+                           'IG' = predictData2Chan,
+                           'ITGc' = predictDataIndTruncF,
+                           'ITGcm' = predictDataIndTruncML,
+                           'GN' = predictDataNoisy,
+                           'PDA' = predictDataISDT,
+                           'logN' = predictDataLognorm)
+
+  if("model" %in% colnames(fitted_pars)){
+    if(length(unique(fitted_pars$model))>1){
+      fitted_pars <- fitted_pars[fitted_pars$model == model,]
+    }}
+
+  predictedData <- plyr::ddply(fitted_pars, ~participant, predictDataFun)
+  predictedData$correct <-
+    factor(ifelse(predictedData$stimulus==predictedData$response, "correct", "incorrect"))
+
+  AggPredictedData <-
+    aggregate(p ~ stimulus*diffCond*rating*correct, predictedData, mean)
+  AggPredictedData$stimulus <- factor(AggPredictedData$stimulus)
+  levels(AggPredictedData$stimulus) <- c("S = -1", "S = 1")
+  AggPredictedData$diffCond <- factor(AggPredictedData$diffCond)
+  levels(AggPredictedData$diffCond) <-
+    paste("K =", as.numeric(levels(AggPredictedData$diffCond)))
+
+
+  # 5)  create a plot with the observed data
+  PlotObsVsPred  <-
+    ggplot(AggDist,
+           aes(x = .data$rating, y = .data$p)) +
+    facet_grid(diffCond ~ stimulus + correct) +  # No .data$ needed
+    geom_bar(stat = "identity",
+             fill = "white", color = "black") +
+    geom_errorbar(aes(ymin = .data$p - .data$se, ymax = .data$p + .data$se), width = 0) +
+    geom_point(data = AggPredictedData, aes(x = .data$rating, y = .data$p)) + # Fix
+    xlab("Confidence rating") +
+    ylab("Probability") +
+    coord_cartesian(ylim = c(0,1)) +  # Avoids ggplot removing data
+    ggtitle(PlotName) +
+    theme(strip.text.y = element_text(angle = 0)) +
+    theme_minimal()
+
+  # create a plot from the observed data
+  PlotObsVsPred
+}
+
+# internal functions to generate the predicted probabilites
+predictDataSDT <- function(paramDf){
 
   nCond <- sum(is.finite(c(t(paramDf[,grep(pattern = "d_", names(paramDf), value=T)]))))
   nRatings <- sum(is.finite(c(t(paramDf[,grep(pattern = "^theta_minus.", names(paramDf), value=T)]))))+1
@@ -36,27 +262,12 @@ generateDataSDT <- function(paramDf){
   colnames(res) <- c("stimulus", "response", "diffCond",
                      "rating", "p")
   res$p[is.na(res$p) | is.nan(res$p)] <- 0
-  nTrials <- round(paramDf$N / 2 / nCond)
-
-  f <- function(df){
-    ind <- sample(x=1:(2*nRatings),size= nTrials,
-                  prob = as.vector(df$p), replace=T)
-    response <- df$response[ind]
-    rating <- df$rating[ind]
-    data.frame(response = response, rating = rating)
-  }
-  X <- plyr::ddply(res, ~ stimulus + diffCond, f)
-  X$diffCond <- factor(X$diffCond)
-  X$correct <- 0
-  X$correct[X$stimulus==X$response] <- 1
-  X$ratings <- factor(X$rating)
-  X$stimulus <- factor(X$stimulus)
-  X
+  res
 }
 
 # (ii) Noisy
 
-generateDataNoisy <-
+predictDataNoisy <-
   function(paramDf){
 
     nCond <- length(grep(pattern = "d_", names(paramDf), value=T))
@@ -113,26 +324,13 @@ generateDataNoisy <-
     res <- rbind(p_SB_RB,p_SB_RA,  p_SA_RA,p_SA_RB)
     colnames(res) <- c("stimulus", "response", "diffCond", "rating", "p")
     res$p[is.na(res$p) | is.nan(res$p)] <- 0
-    nTrials <- round(paramDf$N / 2 / nCond)
-
-    f <- function(df){
-      ind <- sample(x=1:(2*nRatings),size= nTrials, prob = as.vector(df$p), replace=T)
-      response <- df$response[ind]
-      rating <- df$rating[ind]
-      data.frame(response = response, rating = rating)
-    }
-    X <- plyr::ddply(res, ~ stimulus + diffCond, f)
-    X$correct <- 0
-    X$correct[X$stimulus==X$response] <- 1
-    X$ratings <- factor(X$rating)
-    X$stimulus <- factor(X$stimulus)
-    X
+    res
   }
 
 
 # (iii) PDA
 
-generateDataISDT <-
+predictDataISDT <-
   function(paramDf){
 
     nCond <- length(grep(pattern = "^d_", names(paramDf), value=T))
@@ -192,26 +390,12 @@ generateDataISDT <-
     colnames(res) <- c("stimulus", "response", "diffCond",
                        "rating", "p")
     res$p[is.na(res$p) | is.nan(res$p)] <- 0
-    nTrials <- round(paramDf$N / 2 / nCond)
-
-    f <- function(df){
-      ind <- sample(x=1:(2*nRatings),size= nTrials, prob = as.vector(df$p), replace=T)
-      response <- df$response[ind]
-      rating <- df$rating[ind]
-      data.frame(response = response, rating = rating)
-    }
-    X <- plyr::ddply(res, ~ stimulus + diffCond, f)
-    X$correct <- 0
-    X$correct[X$stimulus==X$response] <- 1
-    X$ratings <- factor(X$rating)
-
-    X$stimulus <- factor(X$stimulus)
-    X
+    res
   }
 
 # (iv) IG
 
-generateData2Chan <- function(paramDf){
+predictData2Chan <- function(paramDf){
   nCond <- sum(is.finite(c(t(paramDf[,grep(pattern = "d_", names(paramDf), value=T)]))))
   nRatings <- sum(is.finite(c(t(paramDf[,grep(pattern = "^theta_minus.", names(paramDf), value=T)]))))+1
   ds <- c(t(paramDf[,paste("d_", 1:nCond, sep="")]))
@@ -257,27 +441,12 @@ generateData2Chan <- function(paramDf){
   colnames(res) <- c("stimulus", "response", "diffCond",
                      "rating", "p")
   res$p[is.na(res$p) | is.nan(res$p)] <- 0
-  nTrials <- round(paramDf$N / 2 / nCond)
-
-  f <- function(df){
-    ind <- sample(x=1:(2*nRatings),size= nTrials,
-                  prob = as.vector(df$p), replace=T)
-    response <- df$response[ind]
-    rating <- df$rating[ind]
-    data.frame(response = response, rating = rating)
-  }
-  X <- plyr::ddply(res, ~ stimulus + diffCond, f)
-  X$diffCond <- factor(X$diffCond)
-  X$correct <- 0
-  X$correct[X$stimulus==X$response] <- 1
-  X$ratings <- factor(X$rating)
-  X$stimulus <- factor(X$stimulus)
-  X
+  res
 }
 
 # (v) WEV
 
-generateDataWEV <-
+predictDataWEV <-
   function(paramDf){
 
     nCond <- length(grep(pattern = "d_", names(paramDf), value=T))
@@ -340,27 +509,13 @@ generateDataWEV <-
     res <- rbind(p_SB_RB,p_SB_RA,  p_SA_RA,p_SA_RB)
     colnames(res) <- c("stimulus", "response", "diffCond", "rating", "p")
     res$p[is.na(res$p) | is.nan(res$p)] <- 0
-    nTrials <- round(paramDf$N / 2 / nCond)
-
-    f <- function(df){
-      ind <- sample(x=1:(2*nRatings),size= nTrials, prob = as.vector(df$p),
-                    replace=T)
-      response <- df$response[ind]
-      rating <- df$rating[ind]
-      data.frame(response = response, rating = rating)
-    }
-    X <- plyr::ddply(res, ~ stimulus + diffCond, f)
-    X$correct <- 0
-    X$correct[X$stimulus==X$response] <- 1
-    X$ratings <- factor(X$rating)
-    X$stimulus <- factor(X$stimulus)
-    X
+    res
   }
 
 
 # (vi) ITGcm
 
-generateDataIndTruncML <-
+predictDataIndTruncML <-
   function(paramDf){
 
     nCond <- length(grep(pattern = "d_", names(paramDf), value=T))
@@ -423,27 +578,13 @@ generateDataIndTruncML <-
     res$p[is.nan(res$p)] <- 0
     res$p[res$p < 0] <- 0
 
-
-    nTrials <- round(paramDf$N / 2 / nCond)
-
-    f <- function(df){
-      ind <- sample(x=1:(2*nRatings),size= nTrials, prob = as.vector(df$p), replace=T)
-      response <- df$response[ind]
-      rating <- df$rating[ind]
-      data.frame(response = response, rating = rating)
-    }
-    X <- plyr::ddply(res, ~ stimulus + diffCond, f)
-    X$correct <- 0
-    X$correct[X$stimulus==X$response] <- 1
-    X$ratings <- factor(X$rating)
-    X$stimulus <- factor(X$stimulus)
-    X
+    res
   }
 
 
 # (vii) ITGc
 
-generateDataIndTruncF <-
+predictDataIndTruncF <-
   function(paramDf){
 
     nCond <- length(grep(pattern = "d_", names(paramDf), value=T))
@@ -501,26 +642,12 @@ generateDataIndTruncF <-
     res$p[is.na(res$p)] <- 0
     res$p[is.nan(res$p)] <- 0
     res$p[res$p < 0] <- 0
-    nTrials <- round(paramDf$N / 2 / nCond)
-
-    f <- function(df){
-      ind <- sample(x=1:(2*nRatings),size= nTrials, prob = as.vector(df$p), replace=T)
-      response <- df$response[ind]
-      rating <- df$rating[ind]
-      data.frame(response = response, rating = rating)
-    }
-    X <- plyr::ddply(res, ~ stimulus + diffCond, f)
-    X$correct <- 0
-    X$correct[X$stimulus==X$response] <- 1
-    X$ratings <- factor(X$rating)
-
-    X$stimulus <- factor(X$stimulus)
-    X
+    res
   }
 
 # (viii) logN
 
-generateDataLognorm <- function(paramDf){
+predictDataLognorm <- function(paramDf){
   nCond <- length(grep(pattern = "d_", names(paramDf), value=T))
   nRatings <- (length(grep(pattern = "^M_theta_minus.", names(paramDf), value=T)))+1
   ds <- c(t(paramDf[,paste("d_", 1:nCond, sep="")]))
@@ -574,27 +701,13 @@ generateDataLognorm <- function(paramDf){
   res <- rbind(p_SB_RB,p_SB_RA,  p_SA_RA,p_SA_RB)
   colnames(res) <- c("stimulus", "response", "diffCond", "rating", "p")
   res$p[is.na(res$p) | is.nan(res$p)] <- 0
-  nTrials <- round(paramDf$N / 2 / nCond)
-
-  f <- function(df){
-    ind <- sample(x=1:(2*nRatings),size= nTrials, prob = as.vector(df$p),
-                  replace=T)
-    response <- df$response[ind]
-    rating <- df$rating[ind]
-    data.frame(response = response, rating = rating)
-  }
-  X <- plyr::ddply(res, ~ stimulus + diffCond, f)
-  X$correct <- 0
-  X$correct[X$stimulus==X$response] <- 1
-  X$ratings <- factor(X$rating)
-  X$stimulus <- factor(X$stimulus)
-  X
+  res
 
 }
 
 # (ix) logWEV
 
-generateDataLogWEV <- function(paramDf){
+predictDataLogWEV <- function(paramDf){
   nCond <- length(grep(pattern = "d_", names(paramDf), value=T))
   nRatings <- (length(grep(pattern = "^theta.minus", names(paramDf), value=T)))+1
   ds <- c(t(paramDf[,paste("d_", 1:nCond, sep="")]))
@@ -656,19 +769,5 @@ generateDataLogWEV <- function(paramDf){
   res <- rbind(p_SB_RB,p_SB_RA,  p_SA_RA,p_SA_RB)
   colnames(res) <- c("stimulus", "response", "diffCond", "rating", "p")
   res$p[is.na(res$p) | is.nan(res$p)] <- 0
-  nTrials <- round(paramDf$N / 2 / nCond)
-
-  f <- function(df){
-    ind <- sample(x=1:(2*nRatings),size= nTrials, prob = as.vector(df$p),
-                  replace=T)
-    response <- df$response[ind]
-    rating <- df$rating[ind]
-    data.frame(response = response, rating = rating)
-  }
-  X <- plyr::ddply(res, ~ stimulus + diffCond, f)
-  X$correct <- 0
-  X$correct[X$stimulus==X$response] <- 1
-  X$ratings <- factor(X$rating)
-  X$stimulus <- factor(X$stimulus)
-  X
+  res
 }

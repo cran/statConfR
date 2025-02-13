@@ -1,8 +1,14 @@
-#' Fit a static confidence model to data
-#'
-#' This function fits one static model of decision confidence to binary choices and confidence judgments.
-#' It calls a corresponding fitting function for the selected model.
-#'
+#' @title Fit a static confidence model to data
+
+#' @description The `fitConf` function fits the parameters of one static model of decision confidence,
+#' provided by the `model` argument, to binary choices and confidence judgments.
+#' See Details for the mathematical specification of the implemented models and
+#' their parameters.
+#' Parameters are fitted using a maximum likelihood estimation method with a
+#' initial grid search to find promising starting values for the optimization.
+#' In addition, several measures of model fit (negative log-likelihood, BIC, AIC, and AICc)
+#' are computed, which can be used for a quantitative model evaluation.
+
 #' @param data  a `data.frame` where each row is one trial, containing following
 #' variables:
 #' * \code{diffCond} (optional; different levels of discriminability,
@@ -13,13 +19,15 @@
 #'    should be a factor with two levels, otherwise it will be transformed to
 #'    a factor with a warning),
 #' * \code{correct} (encoding whether the response was correct; should  be 0 for incorrect responses and 1 for correct responses)
-#' @param model `character` of length 1.
-#' Models implemented so far: 'WEV', 'SDT', 'GN', 'PDA', 'IG', 'ITGc', 'ITGcm', 'logN', and 'logWEV'.
-#' @param nInits `integer`. Number of initial values used for maximum likelihood optimization.
+#' @param model `character` of length 1. The generative model that should be
+#'    fitted. Models implemented so far: 'WEV', 'SDT', 'GN', 'PDA', 'IG',
+#'    'ITGc', 'ITGcm', 'logN', and 'logWEV'.
+#' @param nInits `integer`. Number of starting values used for maximum likelihood optimization.
 #' Defaults to 5.
 #' @param nRestart `integer`. Number of times the optimization algorithm is restarted.
 #' Defaults to 4.
-#' @return Gives data frame with one row and columns for the fitted parameters of the
+#'
+#' @return Gives data frame with one row and one column for each of the fitted parameters of the
 #' selected model as well as additional information about the fit
 #' (`negLogLik` (negative log-likelihood of the final set of parameters),
 #' `k` (number of parameters), `N` (number of data rows),
@@ -62,19 +70,19 @@
 #' How the confidence variable \eqn{y} is computed varies across the different models.
 #' The following models have been implemented so far:
 #'
-#' ### \strong{Signal Detection Rating Model (SDT)}
+#' ### \strong{Signal detection rating model (SDT)}
 #' According to SDT, the same sample of sensory
 #' evidence is used to generate response and confidence, i.e.,
 #' \eqn{y=x} and the confidence criteria span from the left and
 #' right side of the decision criterion \eqn{c} (Green & Swets, 1966).
 #'
-#' ### \strong{Gaussian Noise Model (GN)}
+#' ### \strong{Gaussian noise model (GN)}
 #' According to the model, \eqn{y} is subject to
 #' additive noise and assumed to be normally distributed around the decision
 #' evidence value \eqn{x} with a standard deviation \eqn{\sigma} (Maniscalco & Lau, 2016).
 #' The parameter  \eqn{\sigma} is a free parameter.
 #'
-#' ### \strong{Weighted Evidence and Visibility model (WEV)}
+#' ### \strong{Weighted evidence and visibility model (WEV)}
 #' WEV assumes that the observer combines evidence about decision-relevant features
 #' of the stimulus with the strength of evidence about choice-irrelevant features
 #' to generate confidence (Rausch et al., 2018). Here, we use the version of the WEV model
@@ -94,7 +102,7 @@
 #' For this model the parameter \eqn{b} is fitted in
 #' addition to the set of shared parameters.
 #'
-#' ### \strong{Independent Gaussian Model (IG)}
+#' ### \strong{Independent Gaussian model (IG)}
 #' According to IG, \eqn{y} is sampled independently
 #' from \eqn{x} (Rausch & Zehetleitner, 2017). \eqn{y} is normally distributed with a mean of \eqn{a\times d_k} and variance
 #' of 1 (again as it would scale with \eqn{m}). The free parameter \eqn{m}
@@ -102,7 +110,7 @@
 #' relative to amount of evidence available for the discrimination decision and can
 #'  be smaller as well as greater than 1.
 #'
-#' ### \strong{Independent Truncated Gaussian Model: HMetad-Version (ITGc)}
+#' ### \strong{Independent truncated Gaussian model: HMetad-Version (ITGc)}
 #' According to the version of ITG consistent
 #' with the HMetad-method (Fleming, 2017; see Rausch et al., 2023), \eqn{y} is sampled independently
 #' from \eqn{x} from a truncated Gaussian distribution with a location parameter
@@ -115,7 +123,7 @@
 #' amount of evidence available for discrimination decisions and  can be smaller
 #' as well as greater than 1.
 #'
-#' ### \strong{Independent Truncated Gaussian Model: Meta-d'-Version (ITGcm)}
+#' ### \strong{Independent truncated Gaussian model: Meta-d'-Version (ITGcm)}
 #' According to the version of the ITG consistent
 #' with the original meta-d' method (Maniscalco & Lau, 2012, 2014; see Rausch et al., 2023),
 #' \eqn{y} is sampled independently from \eqn{x} from a truncated Gaussian distribution with a location parameter
@@ -127,7 +135,7 @@
 #' amount of evidence available for the discrimination decision and  can be smaller
 #' as well as greater than 1.
 #'
-#' ### \strong{Logistic Noise Model (logN)}
+#' ### \strong{Logistic noise model (logN)}
 #' According to logN, the same sample
 #' of sensory evidence is used to generate response and confidence, i.e.,
 #' \eqn{y=x} just as in SDT (Shekhar & Rahnev, 2021). However, according to logN, the confidence criteria
@@ -146,7 +154,7 @@
 #' \overline{\theta}_{-1,L-1}, \overline{\theta}_{1,1}, ...  \overline{\theta}_{1,L-1}},
 #' as free parameters.
 #'
-#' ### \strong{Logistic Weighted Evidence and Visibility model (logWEV)}
+#' ### \strong{Logistic weighted evidence and visibility model (logWEV)}
 #' logWEV is a combination of logN and WEV proposed by Shekhar and Rahnev (2023).
 #' Conceptually, logWEV assumes that the observer combines evidence about decision-relevant features
 #' of the stimulus with the strength of evidence about choice-irrelevant features (Rausch et al., 2018).
@@ -160,30 +168,24 @@
 #' The parameter \eqn{w} represents the weight that is put on the choice-irrelevant
 #' features in the confidence judgment. \eqn{w} and \eqn{\sigma} are fitted in
 #' addition to the set of shared parameters.
-#'
-#'
-#' @md
-#'
-#' @author Sebastian Hellmann, \email{sebastian.hellmann@ku.de}
-#' @author Manuel Rausch, \email{manuel.rausch@hochschule-rhein-waal.de}
-#'
-#' @name fitConf
-#' @importFrom stats dnorm pnorm qnorm optim integrate plnorm
-#'
-#' @references Akaike, H. (1974). A New Look at the Statistical Model Identification. IEEE Transactions on Automatic Control, AC-19(6), 716–723.doi: 10.1007/978-1-4612-1694-0_16
-#' @references Burnham, K. P., & Anderson, D. R. (2002). Model selection and multimodel inference: A practical information-theoretic approach. Springer.
-#' @references Fleming, S. M. (2017). HMeta-d: Hierarchical Bayesian estimation of metacognitive efficiency from confidence ratings. Neuroscience of Consciousness, 1, 1–14. doi: 10.1093/nc/nix007
-#' @references Green, D. M., & Swets, J. A. (1966). Signal detection theory and psychophysics. Wiley.
-#' @references Maniscalco, B., & Lau, H. (2012). A signal detection theoretic method for estimating metacognitive sensitivity from confidence ratings. Consciousness and Cognition, 21(1), 422–430.
-#' @references Maniscalco, B., & Lau, H. C. (2014). Signal Detection Theory Analysis of Type 1 and Type 2 Data: Meta-d’, Response- Specific Meta-d’, and the Unequal Variance SDT Model. In S. M. Fleming & C. D. Frith (Eds.), The Cognitive Neuroscience of Metacognition (pp. 25–66). Springer. doi: 10.1007/978-3-642-45190-4_3
-#' @references Maniscalco, B., & Lau, H. (2016). The signal processing architecture underlying subjective reports of sensory awareness. Neuroscience of Consciousness, 1, 1–17. doi: 10.1093/nc/niw002
-#' @references Rausch, M., Hellmann, S., & Zehetleitner, M. (2018). Confidence in masked orientation judgments is informed by both evidence and visibility. Attention, Perception, and Psychophysics, 80(1), 134–154. doi: 10.3758/s13414-017-1431-5
-#' @references Rausch, M., Hellmann, S., & Zehetleitner, M. (2023). Measures of metacognitive efficiency across cognitive models of decision confidence. Psychological Methods. doi: 10.31234/osf.io/kdz34
-#' @references Rausch, M., & Zehetleitner, M. (2017). Should metacognition be measured by logistic regression? Consciousness and Cognition, 49, 291–312. doi: 10.1016/j.concog.2017.02.007
-#' @references Schwarz, G. (1978). Estimating the dimension of a model. The Annals of Statistics, 6(2), 461–464. doi: 10.1214/aos/1176344136
-#' @references Shekhar, M., & Rahnev, D. (2021). The Nature of Metacognitive Inefficiency in Perceptual Decision Making. Psychological Review, 128(1), 45–70. doi: 10.1037/rev0000249
-#' @references Shekhar, M., & Rahnev, D. (2023). How Do Humans Give Confidence? A Comprehensive Comparison of Process Models of Perceptual Metacognition. Journal of Experimental Psychology: General. doi:10.1037/xge0001524
 
+#' @author Sebastian Hellmann, \email{sebastian.hellmann@tum.de}\cr
+#' Manuel Rausch, \email{manuel.rausch@hochschule-rhein-waal.de}
+
+# unlike for the other tags, the references are formatted more nicely if each reference is tagged seperately
+#' @references Akaike, H. (1974). A New Look at the Statistical Model Identification. IEEE Transactions on Automatic Control, AC-19(6), 716–723.doi: 10.1007/978-1-4612-1694-0_16\cr
+#' @references Burnham, K. P., & Anderson, D. R. (2002). Model selection and multimodel inference: A practical information-theoretic approach. Springer.\cr
+#' @references Fleming, S. M. (2017). HMeta-d: Hierarchical Bayesian estimation of metacognitive efficiency from confidence ratings. Neuroscience of Consciousness, 1, 1–14. doi: 10.1093/nc/nix007\cr
+#' @references Green, D. M., & Swets, J. A. (1966). Signal detection theory and psychophysics. Wiley.\cr
+#' @references Maniscalco, B., & Lau, H. (2012). A signal detection theoretic method for estimating metacognitive sensitivity from confidence ratings. Consciousness and Cognition, 21(1), 422–430.\cr
+#' @references Maniscalco, B., & Lau, H. C. (2014). Signal Detection Theory Analysis of Type 1 and Type 2 Data: Meta-d’, Response- Specific Meta-d’, and the Unequal Variance SDT Model. In S. M. Fleming & C. D. Frith (Eds.), The Cognitive Neuroscience of Metacognition (pp. 25–66). Springer. doi: 10.1007/978-3-642-45190-4_3\cr
+#' @references Maniscalco, B., & Lau, H. (2016). The signal processing architecture underlying subjective reports of sensory awareness. Neuroscience of Consciousness, 1, 1–17. doi: 10.1093/nc/niw002\cr
+#' @references Rausch, M., Hellmann, S., & Zehetleitner, M. (2018). Confidence in masked orientation judgments is informed by both evidence and visibility. Attention, Perception, and Psychophysics, 80(1), 134–154. doi: 10.3758/s13414-017-1431-5\cr
+#' @references Rausch, M., Hellmann, S., & Zehetleitner, M. (2023). Measures of metacognitive efficiency across cognitive models of decision confidence. Psychological Methods. doi: 10.31234/osf.io/kdz34\cr
+#' @references Rausch, M., & Zehetleitner, M. (2017). Should metacognition be measured by logistic regression? Consciousness and Cognition, 49, 291–312. doi: 10.1016/j.concog.2017.02.007\cr
+#' @references Schwarz, G. (1978). Estimating the dimension of a model. The Annals of Statistics, 6(2), 461–464. doi: 10.1214/aos/1176344136\cr
+#' @references Shekhar, M., & Rahnev, D. (2021). The Nature of Metacognitive Inefficiency in Perceptual Decision Making. Psychological Review, 128(1), 45–70. doi: 10.1037/rev0000249\cr
+#' @references Shekhar, M., & Rahnev, D. (2023). How Do Humans Give Confidence? A Comprehensive Comparison of Process Models of Perceptual Metacognition. Journal of Experimental Psychology: General. doi:10.1037/xge0001524\cr
 
 #' @examples
 #' # 1. Select one subject from the masked orientation discrimination experiment
@@ -192,11 +194,12 @@
 #'
 #' # 2. Use fitting function
 #' \donttest{
-#'   # Fitting takes some time to run:
+#'   # Fitting takes some time (about 10 minutes on an 2.8GHz processor) to run:
 #'   FitFirstSbjWEV <- fitConf(data, model="WEV")
 #' }
-#'
-#'
+
+#' @importFrom stats dnorm pnorm qnorm optim integrate plnorm
+
 #' @export
 fitConf <- function(data, model = "SDT",
                   #  diffCond = NULL, stimulus = NULL, correct = NULL, rating = NULL,

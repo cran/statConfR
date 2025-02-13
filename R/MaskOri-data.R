@@ -1,6 +1,7 @@
 #' Data of 16 participants in a masked orientation discrimination experiment (Hellmann et al., 2023, Exp. 1)
 #'
-#' In each trial, participants were shown a sinusoidal grating oriented either horizontally or vertically, followed by a mask after varying stimulus-onset-asynchronies.
+#' In each trial, participants were shown a sinusoidal grating oriented either horizontally or vertically,
+#' followed by a mask after varying stimulus-onset-asynchronies.
 #' Participants were instructed to report the orientation and their degree of confidence as accurately as possible
 #'
 #' @docType data
@@ -11,6 +12,7 @@
 #' \describe{
 #' \item{participant}{integer values as unique participant identifier}
 #'   \item{stimulus}{orientation of the grating (90: vertical, 0: horizontal)}
+#'   \item{response }{ participants' orientation judgment about the grating (90: vertical, 0: horizontal)}
 #'   \item{correct}{0-1 column indicating whether the discrimination response was correct (1) or not (0)}
 #'   \item{rating}{0-4 confidence rating on a continous scale binned into five categories}
 #'   \item{diffCond}{stimulus-onset-asynchrony in ms (i.e. time between stimulus and mask onset)}
@@ -18,7 +20,7 @@
 #' }
 #' @keywords datasets
 #'
-# @references Hellmann, S., Zehetleitner, M., & Rausch, M. (2023). Simultaneous modeling of choice, confidence, and response time in visual perception. Psychological Review. 130(6), 1521–1543. doi:10.1037/rev0000411
+#' @references Hellmann, S., Zehetleitner, M., & Rausch, M. (2023). Simultaneous modeling of choice, confidence, and response time in visual perception. Psychological Review. 130(6), 1521–1543. doi:10.1037/rev0000411
 # @source https://github.com/SeHellmann/SeqSamplingConfidenceModels
 
 #' @examples

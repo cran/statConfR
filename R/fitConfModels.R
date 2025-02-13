@@ -1,24 +1,38 @@
-#' Fit several static confidence models to multiple participants
-#'
-#' This function is a wrapper of the function \code{\link{fitConf}}. It calls the function for every possible combination
-#' of model in the `model` argument and participant in the \code{data}, respectively.
-#' See the Details for more information about the parameters.
-#'
+#' @title Fit several static confidence models to multiple participants
+
+#' @description The `fitConfModels` function fits the parameters of several computational models of decision
+#' confidence, in binary choice tasks,  specified in the `model` argument, to
+#' different subsets of one data frame, indicated by different values in the column
+#' `participant` of the `data` argument.
+#' `fitConfModels` is a wrapper of the function \code{\link{fitConf}} and calls
+#'  \code{\link{fitConf}} for every possible combination
+#' of model in the `models` argument and sub-data frame of `data` for each value
+#' in the `participant` column.
+#' See Details for more information about the parameters.
+#' Parameters are fitted using a maximum likelihood estimation method with a
+#' initial grid search to find promising starting values for the optimization.
+#' In addition, several measures of model fit (negative log-likelihood, BIC, AIC, and AICc)
+#' are computed, which can be used for a quantitative model evaluation.
+
 #' @param data  a `data.frame` where each row is one trial, containing following
 #' variables:
 #' * \code{diffCond} (optional; different levels of discriminability,
 #'    should be a factor with levels ordered from hardest to easiest),
-#' * \code{rating} (discrete confidence judgments, should be a factor with levels ordered from lowest confidence to highest confidence;
+#' * \code{rating} (discrete confidence judgments, should be a factor with levels
+#'    ordered from lowest confidence to highest confidence;
 #'    otherwise will be transformed to factor with a warning),
 #' * \code{stimulus} (stimulus category in a binary choice task,
 #'    should be a factor with two levels, otherwise it will be transformed to
 #'    a factor with a warning),
-#' * \code{correct} (encoding whether the response was correct; should  be 0 for incorrect responses and 1 for correct responses)
-#' * \code{participant} (giving the subject ID; the models given in the second argument are fitted for each
-#'   subject individually.
-#' @param models `character`.
-#' Models implemented so far: 'WEV', 'SDT', 'GN', 'PDA', 'IG', 'ITGc', 'ITGcm', 'logN', and 'logWEV'.
-#' Alternatively, if `model="all"` (default), all implemented models will be fit.
+#' * \code{correct} (encoding whether the response was correct; should  be 0 for
+#'    incorrect responses and 1 for correct responses)
+#' * \code{participant} (some group ID, most often a participant identifier;
+#'    the models given in the second argument are fitted to each subset of `data`
+#'    determined by the different values of this column)
+#' @param models `character`. The different computational models that should be
+#'    fitted. Models implemented so far: 'WEV', 'SDT', 'GN', 'PDA', 'IG', 'ITGc',
+#'    'ITGcm', 'logN', and 'logWEV'. Alternatively, if `model="all"` (default),
+#'    all implemented models will be fit.
 #' @param nInits `integer`. Number of initial values used for maximum likelihood optimization.
 #' Defaults to 5.
 #' @param nRestart `integer`. Number of times the optimization is restarted.
@@ -27,8 +41,11 @@
 #' (default: FALSE)
 #' @param n.cores `integer`. Number of cores used for parallelization. If NULL (default), the available
 #' number of cores -1 will be used.
-#'
-#' @return Gives data frame with one row for each combination of model and participant and columns for the estimated parameters.
+
+#' @return Gives `data.frame` with one row for each combination of model and
+#' participant. There are different columns for the model, the participant ID, and one
+#' one column for each estimated model parameter (parameters
+#' not present in a specific model are filled with NAs).
 #' Additional information  about the fit is provided in additional columns:
 #' - `negLogLik` (negative log-likelihood of the best-fitting set of parameters),
 #' - `k` (number of parameters),
@@ -37,11 +54,13 @@
 #' - `BIC` (Bayes information criterion; Schwarz, 1978),
 #' - `AICc` (AIC corrected for small samples; Burnham & Anderson, 2002)
 #' If length(models) > 1 or models == "all", there will be three additional columns:
-#' - `wAIC`: Akaike weights based on AIC,
-#' - `wAIC`: Akaike weights based on AICc,
-#' - `wBICc`: Schwarz weights (see Burnham & Anderson, 2002)
+
+#' @details
+#' The provided `data` argument is split into subsets according to the values of
+#' the `participant` column. Then for each subset and each model in the `models`
+#' argument, the parameters of the respective model are fitted to the data subset.
 #'
-#' @details The fitting routine first performs a coarse grid search to find promising
+#' The fitting routine first performs a coarse grid search to find promising
 #' starting values for the maximum likelihood optimization procedure. Then the best \code{nInits}
 #' parameter sets found by the grid search are used as the initial values for separate
 #' runs of the Nelder-Mead algorithm implemented in \code{\link[stats]{optim}}.
@@ -77,19 +96,19 @@
 #' How the confidence variable \eqn{y} is computed varies across the different models.
 #' The following models have been implemented so far:
 #'
-#' ### \strong{Signal Detection Rating Model (SDT)}
+#' ### \strong{Signal detection rating model (SDT)}
 #' According to SDT, the same sample of sensory
 #' evidence is used to generate response and confidence, i.e.,
 #' \eqn{y=x} and the confidence criteria span from the left and
 #' right side of the decision criterion \eqn{c}(Green & Swets, 1966).
 #'
-#' ### \strong{Gaussian Noise Model (GN)}
+#' ### \strong{Gaussian noise model (GN)}
 #' According to the model, \eqn{y} is subject to
 #' additive noise and assumed to be normally distributed around the decision
 #' evidence value \eqn{x} with a standard deviation \eqn{\sigma}(Maniscalco & Lau, 2016).
 #' \eqn{\sigma} is an additional free parameter.
 #'
-#' ### \strong{Weighted Evidence and Visibility model (WEV)}
+#' ### \strong{Weighted evidence and visibility model (WEV)}
 #' WEV assumes that the observer combines evidence about decision-relevant features
 #' of the stimulus with the strength of evidence about choice-irrelevant features
 #' to generate confidence (Rausch et al., 2018). Thus, the WEV model assumes that \eqn{y} is normally
@@ -108,7 +127,7 @@
 #' For this model the parameter \eqn{a} is fitted in addition to the shared
 #' parameters.
 #'
-#' ### \strong{Independent Gaussian Model (IG)}
+#' ### \strong{Independent Gaussian model (IG)}
 #' According to IG, \eqn{y} is sampled independently
 #' from \eqn{x} (Rausch & Zehetleitner, 2017). \eqn{y} is normally distributed with a mean of \eqn{a\times d_k} and variance
 #' of 1 (again as it would scale with \eqn{m}). The additional parameter \eqn{m}
@@ -116,7 +135,7 @@
 #' relative to amount of evidence available for the discrimination decision and can
 #'  be smaller as well as greater than 1.
 #'
-#' ### \strong{Independent Truncated Gaussian Model: HMetad-Version (ITGc)}
+#' ### \strong{Independent truncated Gaussian model: HMetad-Version (ITGc)}
 #' According to the version of ITG consistent
 #' with the HMetad-method (Fleming, 2017; see Rausch et al., 2023), \eqn{y} is sampled independently
 #' from \eqn{x} from a truncated Gaussian distribution with a location parameter
@@ -129,7 +148,7 @@
 #' amount of evidence available for discrimination decisions and  can be smaller
 #' as well as greater than 1.
 #'
-#' ### \strong{Independent Truncated Gaussian Model: Meta-d'-Version (ITGcm)}
+#' ### \strong{Independent truncated Gaussian model: Meta-d'-Version (ITGcm)}
 #' According to the version of the ITG consistent
 #' with the original meta-d' method (Maniscalco & Lau, 2012, 2014; see Rausch et al., 2023),
 #' \eqn{y} is sampled independently from \eqn{x} from a truncated Gaussian distribution with a location parameter
@@ -141,7 +160,7 @@
 #' amount of evidence available for the discrimination decision and  can be smaller
 #' as well as greater than 1.
 #'
-#' ### \strong{Logistic Noise Model (logN)}
+#' ### \strong{Logistic noise model (logN)}
 #' According to logN, the same sample
 #' of sensory evidence is used to generate response and confidence, i.e.,
 #' \eqn{y=x} just as in SDT (Shekhar & Rahnev, 2021). However, according to logN, the confidence criteria
@@ -160,7 +179,7 @@
 #' \overline{\theta}_{-1,L-1}, \overline{\theta}_{1,1}, ...  \overline{\theta}_{1,L-1}},
 #' as free parameters.
 #'
-#' ### \strong{Logistic Weighted Evidence and Visibility model (logWEV)}
+#' ### \strong{Logistic weighted evidence and visibility model (logWEV)}
 #' logWEV is a combination of logN and WEV proposed by Shekhar and Rahnev (2023).
 #' Conceptually, logWEV assumes that the observer combines evidence about decision-relevant features
 #' of the stimulus with the strength of evidence about choice-irrelevant features (Rausch et al., 2018).
@@ -174,31 +193,26 @@
 #' The parameter \eqn{w} represents the weight that is put on the choice-irrelevant
 #' features in the confidence judgment. \eqn{w} and \eqn{\sigma} are fitted in
 #' addition to the set of shared parameters.
-#'
-#' @md
-#'
-#' @author Sebastian Hellmann, \email{sebastian.hellmann@@ku.de}
-#' @author Manuel Rausch, \email{manuel.rausch@@hochschule-rhein-waal.de}
-#'
-#' @name fitConfModels
-#' @import parallel
-#' @importFrom stats dnorm pnorm qnorm optim integrate plnorm
-#'
-#' @references Akaike, H. (1974). A New Look at the Statistical Model Identification. IEEE Transactions on Automatic Control, AC-19(6), 716–723.doi: 10.1007/978-1-4612-1694-0_16
-#' @references Burnham, K. P., & Anderson, D. R. (2002). Model selection and multimodel inference: A practical information-theoretic approach. Springer.
-#' @references Fleming, S. M. (2017). HMeta-d: Hierarchical Bayesian estimation of metacognitive efficiency from confidence ratings. Neuroscience of Consciousness, 1, 1–14. doi: 10.1093/nc/nix007
-#' @references Green, D. M., & Swets, J. A. (1966). Signal detection theory and psychophysics. Wiley.
-#' @references Maniscalco, B., & Lau, H. (2012). A signal detection theoretic method for estimating metacognitive sensitivity from confidence ratings. Consciousness and Cognition, 21(1), 422–430.
-#' @references Maniscalco, B., & Lau, H. C. (2014). Signal Detection Theory Analysis of Type 1 and Type 2 Data: Meta-d’, Response- Specific Meta-d’, and the Unequal Variance SDT Model. In S. M. Fleming & C. D. Frith (Eds.), The Cognitive Neuroscience of Metacognition (pp. 25–66). Springer. doi: 10.1007/978-3-642-45190-4_3
-#' @references Maniscalco, B., & Lau, H. (2016). The signal processing architecture underlying subjective reports of sensory awareness. Neuroscience of Consciousness, 1, 1–17. doi: 10.1093/nc/niw002
-#' @references Rausch, M., Hellmann, S., & Zehetleitner, M. (2018). Confidence in masked orientation judgments is informed by both evidence and visibility. Attention, Perception, and Psychophysics, 80(1), 134–154. doi: 10.3758/s13414-017-1431-5
-#' @references Rausch, M., Hellmann, S., & Zehetleitner, M. (2023). Measures of metacognitive efficiency across cognitive models of decision confidence. Psychological Methods. doi: 10.31234/osf.io/kdz34
-#' @references Rausch, M., & Zehetleitner, M. (2017). Should metacognition be measured by logistic regression? Consciousness and Cognition, 49, 291–312. doi: 10.1016/j.concog.2017.02.007
-#' @references Schwarz, G. (1978). Estimating the dimension of a model. The Annals of Statistics, 6(2), 461–464. doi: 10.1214/aos/1176344136
-#' @references Shekhar, M., & Rahnev, D. (2021). The Nature of Metacognitive Inefficiency in Perceptual Decision Making. Psychological Review, 128(1), 45–70. doi: 10.1037/rev0000249
-#' @references Shekhar, M., & Rahnev, D. (2023). How Do Humans Give Confidence? A Comprehensive Comparison of Process Models of Perceptual Metacognition. Journal of Experimental Psychology: General. doi:10.1037/xge0001524
 
-#'
+#' @author
+#' Sebastian Hellmann, \email{sebastian.hellmann@tum.de}\cr
+#' Manuel Rausch, \email{manuel.rausch@hochschule-rhein-waal.de}
+
+# unlike for the other tags, the references are formatted more nicely if each reference is tagged seperately
+#' @references Akaike, H. (1974). A New Look at the Statistical Model Identification. IEEE Transactions on Automatic Control, AC-19(6), 716–723.doi: 10.1007/978-1-4612-1694-0_16\cr
+#' @references Burnham, K. P., & Anderson, D. R. (2002). Model selection and multimodel inference: A practical information-theoretic approach. Springer.\cr
+#' @references Fleming, S. M. (2017). HMeta-d: Hierarchical Bayesian estimation of metacognitive efficiency from confidence ratings. Neuroscience of Consciousness, 1, 1–14. doi: 10.1093/nc/nix007\cr
+#' @references Green, D. M., & Swets, J. A. (1966). Signal detection theory and psychophysics. Wiley.\cr
+#' @references Maniscalco, B., & Lau, H. (2012). A signal detection theoretic method for estimating metacognitive sensitivity from confidence ratings. Consciousness and Cognition, 21(1), 422–430.\cr
+#' @references Maniscalco, B., & Lau, H. C. (2014). Signal Detection Theory Analysis of Type 1 and Type 2 Data: Meta-d’, Response- Specific Meta-d’, and the Unequal Variance SDT Model. In S. M. Fleming & C. D. Frith (Eds.), The Cognitive Neuroscience of Metacognition (pp. 25–66). Springer. doi: 10.1007/978-3-642-45190-4_3\cr
+#' @references Maniscalco, B., & Lau, H. (2016). The signal processing architecture underlying subjective reports of sensory awareness. Neuroscience of Consciousness, 1, 1–17. doi: 10.1093/nc/niw002\cr
+#' @references Rausch, M., Hellmann, S., & Zehetleitner, M. (2018). Confidence in masked orientation judgments is informed by both evidence and visibility. Attention, Perception, and Psychophysics, 80(1), 134–154. doi: 10.3758/s13414-017-1431-5\cr
+#' @references Rausch, M., Hellmann, S., & Zehetleitner, M. (2023). Measures of metacognitive efficiency across cognitive models of decision confidence. Psychological Methods. doi: 10.31234/osf.io/kdz34\cr
+#' @references Rausch, M., & Zehetleitner, M. (2017). Should metacognition be measured by logistic regression? Consciousness and Cognition, 49, 291–312. doi: 10.1016/j.concog.2017.02.007\cr
+#' @references Schwarz, G. (1978). Estimating the dimension of a model. The Annals of Statistics, 6(2), 461–464. doi: 10.1214/aos/1176344136\cr
+#' @references Shekhar, M., & Rahnev, D. (2021). The Nature of Metacognitive Inefficiency in Perceptual Decision Making. Psychological Review, 128(1), 45–70. doi: 10.1037/rev0000249\cr
+#' @references Shekhar, M., & Rahnev, D. (2023). How Do Humans Give Confidence? A Comprehensive Comparison of Process Models of Perceptual Metacognition. Journal of Experimental Psychology: General. doi:10.1037/xge0001524\cr
+
 #' @examples
 #' # 1. Select two subjects from the masked orientation discrimination experiment
 #' data <- subset(MaskOri, participant %in% c(1:2))
@@ -207,11 +221,15 @@
 #' # 2. Fit some models to each subject of the masked orientation discrimination experiment
 #' \donttest{
 #'   # Fitting several models to several subjects takes quite some time
+#'   # (about 10 minutes per model fit per participant on a 2.8GHz processor
+#'   # with the default values of nInits and nRestart).
 #'   # If you want to fit more than just two subjects,
 #'   # we strongly recommend setting .parallel=TRUE
 #'   Fits <- fitConfModels(data, models = c("SDT", "ITGc"), .parallel = FALSE)
 #' }
 
+#' @import parallel
+#' @importFrom stats dnorm pnorm qnorm optim integrate plnorm
 
 #' @export
 fitConfModels <- function(data, models="all",
@@ -306,21 +324,6 @@ fitConfModels <- function(data, models="all",
   }
   # bind list-outout together into data.frame
   res <- do.call(rbind, res)
-
-  if ("all" %in% models | length(models) > 1){
-    res$wAIC <- NA
-    res$wAICc <- NA
-    res$wBIC <- NA
-    for (sbj in subjects){
-      Ls <- exp(-0.5 * (res$AIC[res$participant==sbj]  - min(res$AIC[res$participant==sbj])))
-      res$wAIC[res$participant==sbj] <- Ls / sum(Ls)
-      Ls <- exp(-0.5 * (res$AICc[res$participant==sbj]  - min(res$AICc[res$participant==sbj])))
-      res$wAICc[res$participant==sbj] <- Ls / sum(Ls)
-      Ls <- exp(-0.5 * (res$BIC[res$participant==sbj]  - min(res$BIC[res$participant==sbj])))
-      res$wBIC[res$participant==sbj] <- Ls / sum(Ls)
-    }
-  }
-
 
   # finally, drop columns with unnecessary parameters
   res <- res[,apply(res, 2, function(X) any(!is.na(X)))]
